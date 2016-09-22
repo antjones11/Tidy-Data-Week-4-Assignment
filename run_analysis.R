@@ -9,11 +9,11 @@
 ## 2. Load the features.txt file which consists of 561 variable description names which correspond to the measurement variables.
 ## This file is used to name the columns in the measurement data frame
 ## 3. Load the activity_labels.txt file which consists of the 6 descriptions and ID code for each activity
-## 4. Variables with "mean()" or "std()" are selected to generate a subset
+## 4. Variables with "mean" or "std" are selected to generate a subset
 ## 5. The the data columns are binded with activity and partipicant labels
 ## 6. The training and test datasets are row binded to form a tidy dataset
-## 7. Data factors are created for the activity and participant
-## 8. A final tidy dataset with the average measurement over each combination of participant and activity
+## 7. Data factors are created for the activity and subject
+## 8. A final tidy dataset with the average measurement over each combination of subject and activity
 ## 9. Writes the data out into a file called tidydata.txt
 
 run_analysis <- function(){
@@ -30,12 +30,15 @@ run_analysis <- function(){
   features <- read.table("./features.txt", header=FALSE)
   activity_lbls <- read.table("./activity_labels.txt", header=FALSE, col.names = c("ActivityID","Activity"))
   
+  #create some tidy column names by remove any symbols "(,",")","-"
+  features$V2 <- gsub('[-()]','',features$V2)
+  
   #Rename the columns according to the features file (561 columns)
   colnames(data.train) <- features$V2
   colnames(data.test) <- features$V2
   
-  #create a logical vector that matches column names containing strings "std()" or "mean()"
-  matching_cols <- grepl("mean\\(\\)|std\\(\\)",features$V2)
+  #create a logical vector that matches column names containing strings "std" or "mean"
+  matching_cols <- grepl("mean|std",features$V2)
   data.train <- data.train[matching_cols]
   data.test <- data.test[matching_cols]
   
@@ -44,17 +47,17 @@ run_analysis <- function(){
   test <- cbind(labels.test,subjects.test,data.test)
   
   #create the first tidy data set by binding train and test sets
-  tidy <- rbind(train,test)
+  data.tidy <- rbind(train,test)
 
   #create factor variables for the activity and subject columns
-  tidy$ActivityID <- factor(tidy$ActivityID,
+  data.tidy$ActivityID <- factor(data.tidy$ActivityID,
                             levels=activity_lbls$ActivityID,
                             labels = activity_lbls$Activity)
-  tidy$Subject <- factor(tidy$Subject)
+  data.tidy$Subject <- factor(data.tidy$Subject)
   
   #create a second tidy dataset by computing mean signal over each combination of activity and participant factors
-  tidy.avg <- aggregate(tidy[,3:68],list(Activity = tidy$ActivityID,
-                                         Participant = tidy$Subject),mean)
+  data.tidyavg <- aggregate(data.tidy[,3:81],list(Activity = data.tidy$ActivityID,
+                                         Subject = data.tidy$Subject),mean)
   
-  write.table(tidy.avg,file="tidydata.txt",row.names=FALSE)
+  write.table(data.tidyavg,file="tidydata.txt",row.names=FALSE)
 }
